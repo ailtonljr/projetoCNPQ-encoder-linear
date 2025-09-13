@@ -1,0 +1,13 @@
+apiVersion: 1
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      defaultBucket: NOME_DO_SEU_BUCKET
+      organization: NOME_DA_SUA_ORG
+      queryLanguage: Flux
+      version: 2
+    secureJsonData:
+      token: "COLE_SEU_TOKEN_DO_INFLUXDB_AQUI"

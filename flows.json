@@ -1,0 +1,156 @@
+[
+    {
+        "id": "9ddcdea959086c8e",
+        "type": "tab",
+        "label": "Fluxo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "31d9e4404cdfd5e6",
+        "type": "mqtt-broker",
+        "name": "HiveMQ Publico",
+        "broker": "broker.hivemq.com",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "1a23b7ab0817f9a4",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://localhost:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "e11b55b37797fc59",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://influxdb:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "bbc3c6b10e51d40c",
+        "type": "mqtt in",
+        "z": "9ddcdea959086c8e",
+        "name": "recebe dados da régua",
+        "topic": "regua/medida",
+        "qos": "2",
+        "datatype": "utf8",
+        "broker": "31d9e4404cdfd5e6",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 500,
+        "y": 100,
+        "wires": [
+            [
+                "cc7a7dc2e0632243"
+            ]
+        ]
+    },
+    {
+        "id": "cc7a7dc2e0632243",
+        "type": "function",
+        "z": "9ddcdea959086c8e",
+        "name": "Formata para InfluxDB",
+        "func": "let medida_str = msg.payload;\nlet medida_num = parseFloat(medida_str);\n\nif (isNaN(medida_num)) {\n    node.error(\"Payload não é um número válido: \" + medida_str);\n    return null;\n}\n\nmsg.payload = {\n    medida: medida_num\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 200,
+        "wires": [
+            [
+                "28f02fb21be754e9",
+                "8a84bb71751051dd"
+            ]
+        ]
+    },
+    {
+        "id": "28f02fb21be754e9",
+        "type": "debug",
+        "z": "9ddcdea959086c8e",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 880,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "8a84bb71751051dd",
+        "type": "influxdb out",
+        "z": "9ddcdea959086c8e",
+        "influxdb": "e11b55b37797fc59",
+        "name": "Grava no InfluxDB",
+        "measurement": "posicao_regua",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "projeto_regua",
+        "bucket": "medicoes",
+        "x": 610,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "a585948795ffa34c",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]
