@@ -29,8 +29,8 @@ Siga estes passos para configurar e executar o ambiente completo do zero.
 Abra um terminal e clone este repositório:
 
 ```bash
-git clone 
-cd 
+git clone https://github.com/RodrigoShig/projetoCNPQ-encoder-linear.git
+cd projetoCNPQ-encoder-linear
 ```
 
 ### 2. Setup Inicial do InfluxDB (Execução Única)
