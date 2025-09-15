@@ -5,7 +5,6 @@ services:
   hivemq:
     container_name: hivemq
     image: hivemq/hivemq4:latest
-    container_name: hivemq
     ports:
       - "1883:1883"   # Porta MQTT
       - "8080:8080"   # Console de administração (se disponível)
@@ -22,9 +21,8 @@ services:
   influxdb:
     container_name: influxdb
     image: influxdb:2.7.5
-    container_name: influxdb
     ports:
-      - "8086:8086"
+      - "8086:8086" # Porta padrão do InfluxDB
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
@@ -49,10 +47,10 @@ services:
   nodered:
     container_name: nodered
     build: .
+    # Criei uma imagem personalizada para incluir o node-red-contrib-influxdb
     #image: nodered/node-red:latest
-    container_name: nodered
     ports:
-      - "1880:1880"
+      - "1880:1880" # Porta padrão do Node-RED
     volumes:
       - ./nrdata:/data
     environment:
@@ -69,15 +67,15 @@ networks:
 
 secrets:
   influxdb2-admin-username:
-    file: ~/.env.influxdb2-admin-username
+    file: env/.env.influxdb2-admin-username
   influxdb2-admin-password:
-    file: ~/.env.influxdb2-admin-password
+    file: env/.env.influxdb2-admin-password
   influxdb2-admin-token:
-    file: ~/.env.influxdb2-admin-token
+    file: env/.env.influxdb2-admin-token
   hivemq-user-secret:
-    file: ~/.env.hivemq-user
+    file: env/.env.hivemq-user
   hivemq-password-secret:
-    file: ~/.env.hivemq-password
+    file: env/.env.hivemq-password
 volumes:
   influxdb2-data:
   influxdb2-config:
