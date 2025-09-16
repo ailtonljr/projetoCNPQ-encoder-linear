@@ -1,48 +1,49 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <PubSubClient.h>
-#include <Encoder.h>
+
 
 // ----------------------
 // CONFIGURAÇÃO ETHERNET
 // ----------------------
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-IPAddress ip(192, 168, 1, 177);
-IPAddress gateway(192, 168, 20, 254);
-IPAddress dns(192, 168, 20,254);
+IPAddress ip(192, 168, 100, 177);
+IPAddress gateway(192, 168, 200, 1);
+IPAddress dns(8, 8, 8, 8);
+
+// Tempo entre as leituras
+const long intervalo = 1000;      
+unsigned long tempoAnterior = 0;
 
 // MQTT Configuration 
-const char* mqttServer = "broker.hivemq.com";
+const char* mqttServer = "192.168.100.71"; //Ex. "broker.hivemq.com";
+const char* mqttUsername = "iotuser";
+const char* mqttPassword = "sup3rS3cr3t";
 const int mqtt_port = 1883;
+const char* mqttTopic = "arduino/temperatura";
 
+// Rede Ethernet
 EthernetClient ethClient;
 PubSubClient client(ethClient);
 
 // ----------------------
-// ENCODER
-// ----------------------
-
-Encoder myEnc(2, 3);
-const long intervalo = 1000;      
-unsigned long tempoAnterior = 0;
-long oldPosition = -999;
-
-// ----------------------
-// FUNÇÕES MQTT
+// FUNÇÕES MQTT - Reconecta ao servidor MQTT
 // ----------------------
 void reconnect() {
   while (!client.connected()) {
     Serial.print("Tentando conectar ao MQTT...");
     
     // Gera um client ID único
-    String clientId = "arduinoMegaRegua_";
+    String clientId = "arduinoMegaTemp_";
     clientId += String(random(0xffff), HEX);
-    
-    if (client.connect(clientId.c_str())) {
+
+    // Conecta no servidor, se der certo fala o ID do Client
+    if (client.connect(clientId.c_str(), mqttUsername, mqttPassword)) {
       Serial.println(" conectado!");
       Serial.print("Client ID: ");
       Serial.println(clientId);
     } else {
+      // Se deu errado apresenta o que falhou.
       Serial.print(" falhou, rc=");
       Serial.print(client.state());
       Serial.print(" - ");
@@ -61,12 +62,18 @@ void reconnect() {
         default: Serial.println("Erro desconhecido"); break;
       }
       
+      // Se falhou aguarda 5s antes de tentar novamente.
       delay(5000);
     }
   }
 }
 
 void setup() {
+
+  //Configura o AD para o sensor de temperatura
+  analogReference(INTERNAL1V1);
+  
+  //Configura a serial
   Serial.begin(9600);
   while (!Serial) {
     ; // Aguarda porta serial conectar
@@ -75,6 +82,7 @@ void setup() {
   Serial.println("=== INICIANDO SISTEMA ===");
   Serial.println("Configurando Ethernet...");
   
+  //Conecta na Rede
   // Tenta DHCP primeiro
   if (Ethernet.begin(mac) == 0) {
     Serial.println("DHCP falhou, usando IP fixo...");
@@ -87,6 +95,7 @@ void setup() {
   // Aguarda estabilizar a conexão
   delay(2000);
   
+  // Mostra a configuração de Rede
   Serial.print("IP obtido: ");
   Serial.println(Ethernet.localIP());
   Serial.print("Gateway: ");
@@ -114,41 +123,33 @@ void setup() {
 }
 
 void loop() {
+
+  // Se desconectar do Broker MQTT reconecta
   if (!client.connected()) {
     reconnect();
   }
+  // Você precisa executar essa função de tempos em tempos.
+  // Essa função mantém a conexão com o broker MQTT
   client.loop();
 
-  if (Serial.available()) {
-    char comando = Serial.read();
-    if (comando == 'Z' || comando == 'z') {
-      myEnc.write(0);
-      Serial.println("Encoder zerado!");
-    }
-  }
-
+  // Faz uma atualização a cada segundo sem travar o loop.
   unsigned long tempoAtual = millis();
 
+  // Se passou 1 segundo entra no loop.
   if (tempoAtual - tempoAnterior >= intervalo) {
     tempoAnterior = tempoAtual;
 
-    // Lê a posição atual do encoder
-    long newPosition = myEnc.read();
-    
-    // Calibração: Converte pulsos para centímetros
-    float medida = newPosition / 1956.0;
+    //Lê a temperatura
+    int binTemp = analogRead(A0);
+    float voltage= binTemp * (1.1 / 1023.0) * 100;
 
-    Serial.print("Posição: ");
-    Serial.print(newPosition);
-    Serial.print(" -> Medida (cm): ");
-    Serial.println(medida);
-    
+    // Constrói a mensagem para o MQTT
     char mensagem[10];
-    dtostrf(medida, 1, 2, mensagem);
+    dtostrf(voltage, 1, 2, mensagem);
     
     // Publica a mensagem no broker MQTT se estiver conectado
     if (client.connected()) {
-      client.publish("regua/medida", mensagem);
+      client.publish(mqttTopic, mensagem);
     }
   }
 }
